@@ -243,35 +243,6 @@ impl<T> JSObject<T> {
         JSValue { inner: self.inner }
     }
 
-    /// Create a new Array Object with the given arguments
-    pub fn new_array(context: &JSContext, args: &[JSValue]) -> Result<Self, JSValue> {
-        let args_refs = args.iter().map(|arg| arg.inner).collect::<Vec<_>>();
-        let mut exception: JSValueRef = std::ptr::null_mut();
-        let o_ref = unsafe {
-            JSObjectMakeArray(
-                context.inner,
-                args.len() as _,
-                args_refs.as_slice().as_ptr(),
-                &mut exception,
-            )
-        };
-        if !exception.is_null() {
-            return Err(JSValue::from(exception));
-        }
-        Ok(Self::from(o_ref))
-    }
-
-    pub fn new_function_with_callback(
-        context: &JSContext,
-        name: impl Into<JSString>,
-        callback: JSObjectCallAsFunctionCallback,
-    ) -> Self {
-        let name = name.into();
-        let o_ref =
-            unsafe { JSObjectMakeFunctionWithCallback(context.inner, name.inner, callback) };
-        Self::from(o_ref)
-    }
-
     /// Calls the object constructor
     pub fn construct(&self, context: &JSContext, args: &[JSValue]) -> Result<Self, JSValue> {
         let args_refs = args.iter().map(|arg| arg.inner).collect::<Vec<_>>();
@@ -332,32 +303,6 @@ impl<T> JSObject<T> {
             ));
         }
         Ok(JSValue::from(result))
-    }
-
-    pub fn create_typed_array_with_bytes(
-        context: &JSContext,
-        bytes: &mut [u8],
-    ) -> Result<Self, JSValue> {
-        let deallocator_ctx = std::ptr::null_mut();
-        let mut exception: JSValueRef = std::ptr::null_mut();
-        let result = unsafe {
-            JSObjectMakeTypedArrayWithBytesNoCopy(
-                context.inner,
-                JSTypedArrayType_kJSTypedArrayTypeUint8Array,
-                bytes.as_ptr() as _,
-                bytes.len() as _,
-                None,
-                deallocator_ctx,
-                &mut exception,
-            )
-        };
-        if !exception.is_null() {
-            return Err(JSValue::from(exception));
-        }
-        if result.is_null() {
-            return Err(JSValue::string(context, "Can't create a type array"));
-        }
-        Ok(Self::from(result))
     }
 
     /// Get a mutable typed array buffer from current object.
@@ -571,6 +516,63 @@ impl JSObject {
                 context: context.get_ref(),
             }),
         }
+    }
+
+    /// Create a new Array Object with the given arguments.
+    pub fn new_array(context: &JSContext, args: &[JSValue]) -> Result<JSObject, JSValue> {
+        let args_refs = args.iter().map(|arg| arg.inner).collect::<Vec<_>>();
+        let mut exception: JSValueRef = std::ptr::null_mut();
+        let o_ref = unsafe {
+            JSObjectMakeArray(
+                context.inner,
+                args.len() as _,
+                args_refs.as_slice().as_ptr(),
+                &mut exception,
+            )
+        };
+        if !exception.is_null() {
+            return Err(JSValue::from(exception));
+        }
+        Ok(JSObject::from(o_ref))
+    }
+
+    /// Create a new function object with the given callback.
+    pub fn new_function_with_callback(
+        context: &JSContext,
+        name: impl Into<JSString>,
+        callback: JSObjectCallAsFunctionCallback,
+    ) -> JSObject {
+        let name = name.into();
+        let o_ref =
+            unsafe { JSObjectMakeFunctionWithCallback(context.inner, name.inner, callback) };
+        JSObject::from(o_ref)
+    }
+
+    /// Creates a typed array backed by raw bytes (no copy).
+    pub fn create_typed_array_with_bytes(
+        context: &JSContext,
+        bytes: &mut [u8],
+    ) -> Result<JSObject, JSValue> {
+        let deallocator_ctx = std::ptr::null_mut();
+        let mut exception: JSValueRef = std::ptr::null_mut();
+        let result = unsafe {
+            JSObjectMakeTypedArrayWithBytesNoCopy(
+                context.inner,
+                JSTypedArrayType_kJSTypedArrayTypeUint8Array,
+                bytes.as_ptr() as _,
+                bytes.len() as _,
+                None,
+                deallocator_ctx,
+                &mut exception,
+            )
+        };
+        if !exception.is_null() {
+            return Err(JSValue::from(exception));
+        }
+        if result.is_null() {
+            return Err(JSValue::string(context, "Can't create a type array"));
+        }
+        Ok(JSObject::from(result))
     }
 
     /// Creates a typed array backed by the given ArrayBuffer object.
