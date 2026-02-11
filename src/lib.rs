@@ -243,54 +243,6 @@ impl<T> JSObject<T> {
         JSValue { inner: self.inner }
     }
 
-    /// Create a new generic object
-    ///
-    /// Note: you cannot set private datas inside this object because it doesn't
-    /// derive from a class. If you would like to use private datas, create a
-    /// class object with JSObject::class or JSClass::create().make_object()
-    pub fn new(context: &JSContext) -> JSObject {
-        unsafe { JSObjectMake(context.inner, std::ptr::null_mut(), std::ptr::null_mut()).into() }
-    }
-
-    /// Creates a new class.
-    pub fn class(
-        context: &mut JSContext,
-        class_name: impl ToString,
-        constructor: JSObjectCallAsConstructorCallback,
-    ) -> JSObject<JSClass> {
-        let class = JSClass::create_ref(class_name, constructor);
-        unsafe {
-            JSObject {
-                inner: JSObjectMake(context.get_ref(), class, std::ptr::null_mut()),
-                data: Some(class.into()),
-            }
-        }
-    }
-
-    /// Creates a new deffered promise.
-    pub fn promise(context: &mut JSContext) -> JSObject<JSPromise> {
-        // TODO: not sure if I'm supposed to protect these function from garbage collecting
-        //       The article https://devsday.ru/blog/details/114430 could be interesting
-        let mut resolve = JSObject::<JSObjectGeneric>::new(context);
-        let mut reject = JSObject::<JSObjectGeneric>::new(context);
-        let inner = unsafe {
-            JSObjectMakeDeferredPromise(
-                context.get_ref(),
-                &mut resolve.inner,
-                &mut reject.inner,
-                std::ptr::null_mut(),
-            )
-        };
-        JSObject::<JSPromise> {
-            inner,
-            data: Some(JSPromise {
-                resolve,
-                reject,
-                context: context.get_ref(),
-            }),
-        }
-    }
-
     /// Create a new Array Object with the given arguments
     pub fn new_array(context: &JSContext, args: &[JSValue]) -> Result<Self, JSValue> {
         let args_refs = args.iter().map(|arg| arg.inner).collect::<Vec<_>>();
@@ -406,31 +358,6 @@ impl<T> JSObject<T> {
             return Err(JSValue::string(context, "Can't create a type array"));
         }
         Ok(Self::from(result))
-    }
-
-    pub fn create_typed_array_from_buffer(
-        context: &JSContext,
-        buffer: JSObject,
-    ) -> Result<JSObject, JSValue> {
-        let mut exception: JSValueRef = std::ptr::null_mut();
-        let result = unsafe {
-            JSObjectMakeTypedArrayWithArrayBuffer(
-                context.inner,
-                JSTypedArrayType_kJSTypedArrayTypeUint8Array,
-                buffer.inner,
-                &mut exception,
-            )
-        };
-        if !exception.is_null() {
-            return Err(JSValue::from(exception));
-        }
-        if result.is_null() {
-            return Err(JSValue::string(
-                context,
-                "Can't create a typed array from the provided buffer",
-            ));
-        }
-        Ok(JSObject::from(result))
     }
 
     /// Get a mutable typed array buffer from current object.
@@ -590,6 +517,86 @@ impl<T> JSObject<T> {
                 &mut exception,
             );
         }
+    }
+}
+
+/// Factory methods that return concrete types rather than `Self`.
+///
+/// These live on `impl JSObject` (not `impl<T> JSObject<T>`) because the
+/// return type is always a specific variant—`JSObject`, `JSObject<JSClass>`,
+/// or `JSObject<JSPromise>`—so the generic parameter `T` would be
+/// unconstrained and force callers into unnecessary turbofish annotations.
+impl JSObject {
+    /// Create a new generic object.
+    ///
+    /// Note: you cannot set private data inside this object because it doesn't
+    /// derive from a class. If you would like to use private data, create a
+    /// class object with `JSObject::class` or `JSClass::create().make_object()`.
+    pub fn new(context: &JSContext) -> JSObject {
+        unsafe { JSObjectMake(context.inner, std::ptr::null_mut(), std::ptr::null_mut()).into() }
+    }
+
+    /// Creates a new class-backed object.
+    pub fn class(
+        context: &mut JSContext,
+        class_name: impl ToString,
+        constructor: JSObjectCallAsConstructorCallback,
+    ) -> JSObject<JSClass> {
+        let class = JSClass::create_ref(class_name, constructor);
+        unsafe {
+            JSObject {
+                inner: JSObjectMake(context.get_ref(), class, std::ptr::null_mut()),
+                data: Some(class.into()),
+            }
+        }
+    }
+
+    /// Creates a new deferred promise.
+    pub fn promise(context: &mut JSContext) -> JSObject<JSPromise> {
+        let mut resolve = JSObject::new(context);
+        let mut reject = JSObject::new(context);
+        let inner = unsafe {
+            JSObjectMakeDeferredPromise(
+                context.get_ref(),
+                &mut resolve.inner,
+                &mut reject.inner,
+                std::ptr::null_mut(),
+            )
+        };
+        JSObject::<JSPromise> {
+            inner,
+            data: Some(JSPromise {
+                resolve,
+                reject,
+                context: context.get_ref(),
+            }),
+        }
+    }
+
+    /// Creates a typed array backed by the given ArrayBuffer object.
+    pub fn create_typed_array_from_buffer(
+        context: &JSContext,
+        buffer: JSObject,
+    ) -> Result<JSObject, JSValue> {
+        let mut exception: JSValueRef = std::ptr::null_mut();
+        let result = unsafe {
+            JSObjectMakeTypedArrayWithArrayBuffer(
+                context.inner,
+                JSTypedArrayType_kJSTypedArrayTypeUint8Array,
+                buffer.inner,
+                &mut exception,
+            )
+        };
+        if !exception.is_null() {
+            return Err(JSValue::from(exception));
+        }
+        if result.is_null() {
+            return Err(JSValue::string(
+                context,
+                "Can't create a typed array from the provided buffer",
+            ));
+        }
+        Ok(JSObject::from(result))
     }
 }
 
