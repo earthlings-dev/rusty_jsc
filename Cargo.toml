@@ -6,10 +6,17 @@ keywords = [ "javascriptcore", "javascript" ]
 authors = [ "Wasmer Engineering Team <engineering@wasmer.io>", "Pekka Enberg", "Adrien Zinger" ]
 license = "MIT"
 repository = "https://github.com/wasmerio/rusty_jsc"
-edition = "2021"
+edition = "2024"
+rust-version = "1.93.0"
 
 [lib]
 
 [dependencies]
 rusty_jsc_macros = { path = "./macros", version = "0.1.0" }
 rusty_jsc_sys = { path = "./sys", version = "0.1.0" }
+
+[profile.release]
+opt-level = 3
+debug = false
+strip = true
+lto = true

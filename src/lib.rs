@@ -435,18 +435,24 @@ impl<T> JSObject<T> {
     /// Only use that buffer in a synchronous context. The pointer (of slice)
     /// returned by this function is temporary and is not guaranteed to remain
     /// valid across JavaScriptCore API calls.
-    pub unsafe fn get_typed_array_buffer(&self, context: &JSContext) -> Result<&mut [u8], JSValue> {
-        let mut exception: JSValueRef = std::ptr::null_mut();
-        let arr_ptr = JSObjectGetTypedArrayBytesPtr(context.inner, self.inner, &mut exception);
-        if !exception.is_null() {
-            return Err(JSValue::from(exception));
+    pub unsafe fn get_typed_array_buffer(
+        &mut self,
+        context: &JSContext,
+    ) -> Result<&mut [u8], JSValue> {
+        unsafe {
+            let mut exception: JSValueRef = std::ptr::null_mut();
+            let arr_ptr = JSObjectGetTypedArrayBytesPtr(context.inner, self.inner, &mut exception);
+            if !exception.is_null() {
+                return Err(JSValue::from(exception));
+            }
+            let arr_len =
+                JSObjectGetTypedArrayByteLength(context.inner, self.inner, &mut exception);
+            if !exception.is_null() {
+                return Err(JSValue::from(exception));
+            }
+            let slice = std::slice::from_raw_parts_mut(arr_ptr as _, arr_len as usize);
+            Ok(slice)
         }
-        let arr_len = JSObjectGetTypedArrayByteLength(context.inner, self.inner, &mut exception);
-        if !exception.is_null() {
-            return Err(JSValue::from(exception));
-        }
-        let slice = std::slice::from_raw_parts_mut(arr_ptr as _, arr_len as usize);
-        Ok(slice)
     }
 
     /// Gets the property of an object.
@@ -502,7 +508,7 @@ impl<T> JSObject<T> {
     }
 
     // Get the object as an array buffer
-    pub fn get_array_buffer(&self, context: &JSContext) -> Result<&mut [u8], JSValue> {
+    pub fn get_array_buffer(&mut self, context: &JSContext) -> Result<&mut [u8], JSValue> {
         let mut exception: JSValueRef = std::ptr::null_mut();
         let arr_ptr =
             unsafe { JSObjectGetArrayBufferBytesPtr(context.inner, self.inner, &mut exception) };
@@ -621,11 +627,13 @@ where
     /// The pointer to the private data isn't guaranted to be type N if you put
     /// something else before.
     pub unsafe fn get_private_data<N>(&mut self) -> Option<*mut N> {
-        let data = JSObjectGetPrivate(self.inner);
-        if data.is_null() {
-            None
-        } else {
-            Some(data as _)
+        unsafe {
+            let data = JSObjectGetPrivate(self.inner);
+            if data.is_null() {
+                None
+            } else {
+                Some(data as _)
+            }
         }
     }
 }

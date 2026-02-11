@@ -5,5 +5,5 @@ fn main() {
 
 #[cfg(target_os = "linux")]
 fn main() {
-    pkg_config::probe_library("javascriptcoregtk-4.1").unwrap();
+    pkg_config::probe_library("javascriptcoregtk-6.0").unwrap();
 }

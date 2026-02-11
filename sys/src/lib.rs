@@ -62,7 +62,7 @@ pub type JSValueRef = *const OpaqueJSValue;
 
 pub type JSObjectRef = *mut OpaqueJSValue;
 
-extern "C" {
+unsafe extern "C" {
 
     pub fn JSEvaluateScript(
         ctx: JSContextRef,
@@ -73,7 +73,7 @@ extern "C" {
         exception: *mut JSValueRef,
     ) -> JSValueRef;
 }
-extern "C" {
+unsafe extern "C" {
 
     pub fn JSCheckScriptSyntax(
         ctx: JSContextRef,
@@ -109,7 +109,7 @@ pub const JSTypedArrayType_kJSTypedArrayTypeBigInt64Array: JSTypedArrayType = 11
 pub const JSTypedArrayType_kJSTypedArrayTypeBigUint64Array: JSTypedArrayType = 12;
 
 pub type JSTypedArrayType = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn JSValueGetType(ctx: JSContextRef, value: JSValueRef) -> JSType;
     pub fn JSValueIsUndefined(ctx: JSContextRef, value: JSValueRef) -> bool;
     pub fn JSValueIsNull(ctx: JSContextRef, value: JSValueRef) -> bool;
@@ -158,7 +158,7 @@ extern "C" {
     ) -> JSStringRef;
     pub fn JSValueToBoolean(ctx: JSContextRef, value: JSValueRef) -> bool;
     pub fn JSValueToNumber(ctx: JSContextRef, value: JSValueRef, exception: *mut JSValueRef)
-        -> f64;
+    -> f64;
     pub fn JSValueToStringCopy(
         ctx: JSContextRef,
         value: JSValueRef,
@@ -783,7 +783,7 @@ fn bindgen_test_layout_JSClassDefinition() {
     test_field_convertToType();
 }
 
-extern "C" {
+unsafe extern "C" {
     pub static kJSClassDefinitionEmpty: JSClassDefinition;
     pub fn JSClassCreate(definition: *const JSClassDefinition) -> JSClassRef;
     pub fn JSClassRetain(jsClass: JSClassRef) -> JSClassRef;
@@ -1015,7 +1015,7 @@ extern "C" {
 
 pub type JSChar = ::std::os::raw::c_ushort;
 
-extern "C" {
+unsafe extern "C" {
     pub fn JSStringCreateWithCharacters(chars: *const JSChar, numChars: size_t) -> JSStringRef;
     pub fn JSStringCreateWithUTF8CString(string: *const ::std::os::raw::c_char) -> JSStringRef;
     pub fn JSStringRetain(string: JSStringRef) -> JSStringRef;

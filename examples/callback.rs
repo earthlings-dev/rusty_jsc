@@ -18,15 +18,12 @@ fn example(
 
 #[callback]
 #[allow(unused)] // Just for the example
-fn example2<T>(
+fn example2(
     ctx: JSContext,
     _function: JSObject,
     _this: JSObject,
     _args: &[JSValue],
-) -> Result<JSValue, JSValue>
-where
-    T: Clone,
-{
+) -> Result<JSValue, JSValue> {
     println!("hello from Rust land!");
     Ok(JSValue::string(&ctx, "Hey"))
 }

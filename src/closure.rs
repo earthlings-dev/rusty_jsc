@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! callback_closure {
     ($ctx:expr, $closure:expr) => {{
-        use rusty_jsc::{callback, JSContext, JSObject, JSValue};
+        use rusty_jsc::{JSContext, JSObject, JSValue, callback};
         type CallbackType =
             dyn FnMut(JSContext, JSObject, JSObject, &[JSValue]) -> Result<JSValue, JSValue>;
 
