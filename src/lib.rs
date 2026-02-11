@@ -531,7 +531,7 @@ impl<T> JSObject<T> {
 
     /// Sets the property of an object.
     pub fn set_property(
-        &mut self,
+        &self,
         context: &JSContext,
         property_name: impl Into<JSString>,
         value: JSValue,
@@ -557,7 +557,7 @@ impl<T> JSObject<T> {
 
     /// Sets the property of an object at a given index
     pub fn set_property_at_index(
-        &mut self,
+        &self,
         context: &JSContext,
         index: u32,
         value: JSValue,
@@ -579,7 +579,7 @@ impl<T> JSObject<T> {
     }
 
     /// Deletes the property of an object.
-    pub fn delete_property(&mut self, context: &JSContext, property_name: impl ToString) {
+    pub fn delete_property(&self, context: &JSContext, property_name: impl ToString) {
         let property_name = JSString::from_utf8(property_name.to_string()).unwrap();
         let mut exception: JSValueRef = std::ptr::null_mut();
         unsafe {
