@@ -218,11 +218,11 @@ impl JSValue {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct JSObjectGeneric;
 
 /// A JavaScript object.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JSObject<T = JSObjectGeneric> {
     inner: JSObjectRef,
     /// The data is used to keep track if the JSObject is eventually constructed
@@ -238,6 +238,11 @@ impl<T> From<JSObjectRef> for JSObject<T> {
 }
 
 impl<T> JSObject<T> {
+    /// Converts this object to a [`JSValue`].
+    pub fn to_jsvalue(&self) -> JSValue {
+        JSValue { inner: self.inner }
+    }
+
     /// Create a new generic object
     ///
     /// Note: you cannot set private datas inside this object because it doesn't
