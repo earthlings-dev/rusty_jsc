@@ -6,7 +6,7 @@ authors = [ "Wasmer Engineering Team <engineering@wasmer.io>", "Pekka Enberg", "
 repository = "https://github.com/wasmerio/rusty_jsc"
 license = "MIT"
 edition = "2024"
-rust-version = "1.93.0"
+rust-version = "1.93"
 
 [lib]
 proc-macro = true
